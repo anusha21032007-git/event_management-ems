@@ -42,10 +42,50 @@ import ReturnReasonDialog from './ReturnReasonDialog';
 import { useDropzone } from 'react-dropzone';
 import PosterDialog from './PosterDialog'; // New Import
 
+// --- Helper Functions ---
+
+// Helper function to count words
+const countWords = (text: string | null | undefined) => {
+  if (!text) return 0;
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+};
+
+// Helper function to calculate the current academic year (Sep 1 - Aug 31)
+const getAcademicYear = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0 = Jan, 8 = Sep
+
+  // If current month is Sep (8) or later (up to Dec 11)
+  if (month >= 8) {
+    return `${year}-${year + 1}`;
+  }
+  // If current month is Jan (0) to Aug (7)
+  else {
+    return `${year - 1}-${year}`;
+  }
+};
+
+// Helper function to generate a range of academic years
+const getAcademicYearOptions = () => {
+  const currentAcademicYear = getAcademicYear();
+  const [currentStartYear] = currentAcademicYear.split('-').map(Number);
+  
+  // Generate 3 years back and 3 years forward from the current academic year start year
+  const startRange = currentStartYear - 3; 
+  const endRange = currentStartYear + 3; 
+  
+  const years: string[] = [];
+  for (let y = startRange; y <= endRange; y++) {
+    years.push(`${y}-${y + 1}`);
+  }
+  return years.reverse(); // Show most recent first
+};
+
 // --- Constants for Dropdowns & Checkboxes ---
 
 const PROGRAM_DRIVEN_BY = ['Institute Council', 'Student Council'];
-const QUARTERS = Array.from({ length: 16 }, (_, i) => `Semester ${Math.floor(i / 2) + 1}-Quarter ${i % 2 + 1}`);
+const QUARTERS = ['Quarter I', 'Quarter II', 'Quarter III', 'Quarter IV'];
 const PROGRAM_TYPES = [
   'Level 1 - Expert Talk', 'Level 1 - Exposure Visit', 'Level 1 - Mentoring Session', 'Level 1- Exhibition',
   'Level 2 - Competition', 'Level 2 - Conference', 'Level 2 - Exposure Visit', 'Level 2 - Seminar', 'Level 2 - Workshop',
@@ -111,7 +151,7 @@ const formSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   
   // New Program Detail Fields
-  academic_year: z.string(),
+  academic_year: z.string().min(1, 'Academic year is required'),
   program_driven_by: z.string().min(1, 'This field is required'),
   quarter: z.string().min(1, 'This field is required'),
   program_type: z.string().min(1, 'This field is required'),
@@ -177,6 +217,26 @@ const formSchema = z.object({
       path: ['other_venue_details'],
     });
   }
+  
+  // Word count validation for Objective (Max 99 words)
+  const objectiveWordCount = countWords(data.objective);
+  if (objectiveWordCount > 99) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Objective must be 99 words or less. Current count: ${objectiveWordCount}`,
+      path: ['objective'],
+    });
+  }
+
+  // Word count validation for Proposed Outcomes (Max 145 words)
+  const outcomeWordCount = countWords(data.proposed_outcomes);
+  if (outcomeWordCount > 145) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Proposed Outcomes must be 145 words or less. Current count: ${outcomeWordCount}`,
+      path: ['proposed_outcomes'],
+    });
+  }
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -194,12 +254,6 @@ type EventDialogProps = {
   mode: 'create' | 'edit' | 'view';
 };
 
-const getAcademicYear = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0 = Jan, 5 = June
-  return month >= 5 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
-};
 
 const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogProps) => {
   const { user, profile } = useAuth();
@@ -212,8 +266,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const isEditMode = mode === 'edit';
   const isReadOnly = mode === 'view';
   const isCoordinator = profile?.role === 'coordinator';
-
-  const today = format(new Date(), 'yyyy-MM-dd');
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -266,6 +318,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const requiresFundingSource = budgetEstimate && budgetEstimate > 0;
   const selectedVenueId = form.watch('venue_id');
   const currentPosterUrl = form.watch('poster_url');
+  const academicYearOptions = getAcademicYearOptions();
+  const objectiveValue = form.watch('objective');
+  const outcomeValue = form.watch('proposed_outcomes');
+  const objectiveWordCount = countWords(objectiveValue);
+  const outcomeWordCount = countWords(outcomeValue);
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
@@ -585,7 +642,24 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 <div className="space-y-4 md:col-span-2">
                   <h3 className="text-lg font-semibold border-b pb-2">Program Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField control={form.control} name="academic_year" render={({ field }) => (<FormItem><FormLabel>Academic Year</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="academic_year" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Academic Year</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Academic Year" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {academicYearOptions.map(year => (
+                              <SelectItem key={year} value={year}>{year}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <FormField control={form.control} name="program_driven_by" render={({ field }) => (<FormItem><FormLabel>Program Driven By</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_DRIVEN_BY.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="quarter" render={({ field }) => (<FormItem><FormLabel>Quarter</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{QUARTERS.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="program_theme" render={({ field }) => (<FormItem><FormLabel>Program Theme</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_THEMES.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -606,7 +680,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                             type="date" 
                             {...field} 
                             disabled={isReadOnly} 
-                            min={today}
                           />
                         </FormControl>
                         <FormMessage />
@@ -621,7 +694,6 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                             {...field} 
                             disabled={isReadOnly} 
                             value={field.value ?? ''} 
-                            min={today}
                           />
                         </FormControl>
                         <FormMessage />
@@ -679,7 +751,20 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
-                  <FormField control={form.control} name="objective" render={({ field }) => (<FormItem><FormLabel>Objective of the Event</FormLabel><FormControl><Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="objective" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Objective of the Event</FormLabel>
+                        <span className={cn("text-xs", objectiveWordCount > 99 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {objectiveWordCount} / 99 words
+                        </span>
+                      </div>
+                      <FormControl>
+                        <Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
                 
                 <div className="space-y-4 md:col-span-2">
@@ -701,7 +786,20 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
-                  <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (<FormItem><FormLabel>Proposed Outcomes</FormLabel><FormControl><Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="proposed_outcomes" render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Proposed Outcomes</FormLabel>
+                        <span className={cn("text-xs", outcomeWordCount > 145 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {outcomeWordCount} / 145 words
+                        </span>
+                      </div>
+                      <FormControl>
+                        <Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
 
                 <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
