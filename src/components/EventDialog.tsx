@@ -164,12 +164,12 @@ const formSchema = z.object({
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
-  objective: z.string().min(1, 'Objective is required').max(500, 'Objective must be 500 characters or less.'), // Changed to character limit
+  objective: z.string().min(1, 'Objective is required').max(99, 'Objective must be 99 characters or less.'), // Updated limit
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
-  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(750, 'Proposed Outcomes must be 750 characters or less.'), // Changed to character limit
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(149, 'Proposed Outcomes must be 149 characters or less.'), // Updated limit
   
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
@@ -763,8 +763,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Objective of the Event</FormLabel>
-                        <span className={cn("text-xs", objectiveCharCount > 500 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {objectiveCharCount} / 500 characters
+                        <span className={cn("text-xs", objectiveCharCount > 99 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {objectiveCharCount} / 99 characters
                         </span>
                       </div>
                       <FormControl>
@@ -798,8 +798,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Proposed Outcomes</FormLabel>
-                        <span className={cn("text-xs", outcomeCharCount > 750 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {outcomeCharCount} / 750 characters
+                        <span className={cn("text-xs", outcomeCharCount > 149 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {outcomeCharCount} / 149 characters
                         </span>
                       </div>
                       <FormControl>
