@@ -20,13 +20,13 @@ import { List, ShieldCheck, XCircle, AlertCircle } from 'lucide-react';
 const statusColors = {
   pending_hod: 'bg-yellow-500',
   resubmitted: 'bg-indigo-500', // Added resubmitted color
-  returned_to_coordinator: 'bg-orange-500',
+  returned_to_coordinator: 'bg-red-500',
   pending_dean: 'bg-yellow-600',
-  returned_to_hod: 'bg-orange-600',
+  returned_to_hod: 'bg-orange-600', // Highlight returned to HOD
   pending_principal: 'bg-yellow-700',
   returned_to_dean: 'bg-orange-700',
   approved: 'bg-green-500',
-  rejected: 'bg-red-500',
+  rejected: 'bg-red-700',
   cancelled: 'bg-gray-500',
 };
 
@@ -37,7 +37,8 @@ const HodDashboard = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Fetch all events visible to the HOD (RLS handles filtering by department and status)
+    
+    // RLS ensures only events submitted by the current user's department are returned
     const { data, error } = await supabase
       .from('events')
       .select(`
@@ -77,7 +78,7 @@ const HodDashboard = () => {
   const pendingEvents = allEvents.filter(e => isReviewable(e));
   const otherEvents = allEvents.filter(e => !isReviewable(e));
 
-  const renderEventTable = (eventsList: any[], title: string) => (
+  const renderEventTable = (eventsList: any[], title: string, showSubmittedBy: boolean) => (
     <Card className="bg-white rounded-lg shadow">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
@@ -87,7 +88,7 @@ const HodDashboard = () => {
           <TableHeader>
             <TableRow className="bg-background border-b">
               <TableHead className="text-primary">Title</TableHead>
-              <TableHead className="text-primary">Submitted By</TableHead>
+              {showSubmittedBy && <TableHead className="text-primary">Submitted By</TableHead>}
               <TableHead className="text-primary">Venue</TableHead>
               <TableHead className="text-primary">Date</TableHead>
               <TableHead className="text-primary">Status</TableHead>
@@ -97,11 +98,11 @@ const HodDashboard = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={showSubmittedBy ? 6 : 5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : eventsList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No events found in this category.</TableCell>
+                <TableCell colSpan={showSubmittedBy ? 6 : 5} className="text-center">No events found in this category.</TableCell>
               </TableRow>
             ) : (
               eventsList.map((event: any) => {
@@ -109,7 +110,7 @@ const HodDashboard = () => {
                 return (
                   <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                     <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                    <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
+                    {showSubmittedBy && <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>}
                     <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
                       {event.venues?.name || event.other_venue_details || 'N/A'}
                     </TableCell>
@@ -155,11 +156,11 @@ const HodDashboard = () => {
         </TabsList>
 
         <TabsContent value="pending">
-          {renderEventTable(pendingEvents, "Events Requiring My Approval")}
+          {renderEventTable(pendingEvents, "Events Requiring My Approval", true)}
         </TabsContent>
         
         <TabsContent value="all">
-          {renderEventTable(allEvents, "All Events Submitted by Department Coordinators")}
+          {renderEventTable(allEvents, "All Events Submitted by Department Coordinators", true)}
         </TabsContent>
       </Tabs>
 

@@ -29,10 +29,10 @@ import EventReportDialog from '@/components/EventReportDialog'; // Updated Impor
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
-  resubmitted: 'bg-indigo-500',
-  returned_to_coordinator: 'bg-red-500', // Highlight returned events
+  resubmitted: 'bg-indigo-500', // Resubmitted status
+  returned_to_coordinator: 'bg-red-500', // Returned to Coordinator (requires action)
   pending_dean: 'bg-yellow-600',
-  returned_to_hod: 'bg-orange-600',
+  returned_to_hod: 'bg-orange-600', // Returned to HOD (no action required by coordinator)
   pending_principal: 'bg-yellow-700',
   returned_to_dean: 'bg-orange-700',
   approved: 'bg-green-500',
@@ -97,8 +97,18 @@ const CoordinatorDashboard = () => {
     setIsReportDialogOpen(true); // Use the standard report dialog
   };
 
-  const pendingEvents = allEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
-  const returnedEvents = allEvents.filter(e => e.status.startsWith('returned') || e.status === 'rejected');
+  // Events requiring coordinator action (returned_to_coordinator) or pending initial approval flow
+  const pendingEvents = allEvents.filter(e => 
+    e.status.startsWith('pending') || 
+    e.status === 'resubmitted' ||
+    e.status === 'returned_to_hod' || // Returned to HOD means it's pending HOD action, but coordinator views it as pending
+    e.status === 'returned_to_dean' // Returned to Dean means it's pending Dean action, but coordinator views it as pending
+  );
+  
+  // Events requiring coordinator correction
+  const returnedEvents = allEvents.filter(e => e.status === 'returned_to_coordinator' || e.status === 'rejected');
+  
+  // Approved events
   const approvedEvents = allEvents.filter(e => e.status === 'approved');
 
   const renderEventTable = (eventsList: any[], title: string) => (
@@ -129,7 +139,7 @@ const CoordinatorDashboard = () => {
               </TableRow>
             ) : (
               eventsList.map((event: any) => {
-                const isReturned = event.status === 'returned_to_coordinator';
+                const isReturnedToCoordinator = event.status === 'returned_to_coordinator';
                 const isApproved = event.status === 'approved';
                 return (
                   <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
@@ -152,10 +162,10 @@ const CoordinatorDashboard = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleViewAction(event)}>
-                            {isReturned ? 'Edit & Resubmit' : 'View Details'}
+                            {isReturnedToCoordinator ? 'Edit & Resubmit' : 'View Details'}
                           </DropdownMenuItem>
                           
-                          {isReturned && (
+                          {(isReturnedToCoordinator || event.remarks) && (
                             <DropdownMenuItem 
                               onClick={() => {
                                 setSelectedEvent(event);

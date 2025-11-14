@@ -44,16 +44,19 @@ type EventActionDialogProps = {
 const roleActions = {
   hod: {
     approve: { label: 'Approve & Forward to Dean IR', status: 'pending_dean', timestampField: 'hod_approval_at' },
+    // HOD returns directly to Coordinator
     return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
   dean: {
     approve: { label: 'Approve & Forward to Principal', status: 'pending_principal', timestampField: 'dean_approval_at' },
+    // Dean returns to HOD
     return: { label: 'Return to HOD', status: 'returned_to_hod' },
   },
   principal: {
     approve: { label: 'Approve Event', status: 'approved', timestampField: 'principal_approval_at' },
     reject: { label: 'Reject', status: 'rejected' },
-    return: { label: 'Return to Dean IR', status: 'returned_to_dean' },
+    // Principal returns directly to Coordinator
+    return: { label: 'Return to Coordinator', status: 'returned_to_coordinator' },
   },
 };
 

@@ -16,13 +16,14 @@ import { toast } from 'sonner';
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
-  returned_to_coordinator: 'bg-orange-500',
+  resubmitted: 'bg-indigo-500',
+  returned_to_coordinator: 'bg-red-500',
   pending_dean: 'bg-yellow-600',
   returned_to_hod: 'bg-orange-600',
   pending_principal: 'bg-yellow-700',
   returned_to_dean: 'bg-orange-700',
   approved: 'bg-green-500',
-  rejected: 'bg-red-500',
+  rejected: 'bg-red-700',
   cancelled: 'bg-gray-500',
 };
 
@@ -81,7 +82,6 @@ const PrincipalDashboard = () => {
             <TableHeader>
               <TableRow className="bg-background border-b">
                 <TableHead className="text-primary">Title</TableHead>
-                <TableHead className="text-primary">Submitted Coordinator</TableHead>
                 <TableHead className="text-primary">Dept/Club/Society</TableHead>
                 <TableHead className="text-primary">Venue</TableHead>
                 <TableHead className="text-primary">Date</TableHead>
@@ -92,11 +92,11 @@ const PrincipalDashboard = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : events.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">No events are currently pending your approval.</TableCell>
+                  <TableCell colSpan={6} className="text-center">No events are currently pending your approval.</TableCell>
                 </TableRow>
               ) : (
                 events.map((event: any) => {
@@ -104,7 +104,6 @@ const PrincipalDashboard = () => {
                   return (
                     <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                       <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                      <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>
                       <TableCell>{event.department_club || 'N/A'}</TableCell>
                       <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
                         {event.venues?.name || event.other_venue_details || 'N/A'}
