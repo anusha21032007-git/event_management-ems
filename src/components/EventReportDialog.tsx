@@ -491,14 +491,14 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
                       
                       {/* Image Upload Section */}
                       <div className="space-y-2">
-                        <FormLabel>Evidence Photos (Max 3 Images, JPEG/PNG, 1MB each)</FormLabel>
+                        <FormLabel>Upload Evidence Photos (Max 3 Images from File Manager)</FormLabel>
                         <div
                           {...getRootProps()}
                           className={`p-6 border-2 border-dashed rounded-md text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'} ${reportFiles.length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <input {...getInputProps()} />
                           <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                          <p className="text-sm">Drag 'n' drop images here, or click to select files</p>
+                          <p className="text-sm">Drag 'n' drop images here, or click to select files (Max 3, 1MB each)</p>
                         </div>
                         
                         <div className="flex flex-wrap gap-2 pt-2">
