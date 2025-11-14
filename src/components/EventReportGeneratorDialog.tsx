@@ -166,8 +166,6 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
   const handleGenerateReport = async (formData: ReportFormData) => {
     setIsGenerating(true);
     
-    let aiObjective = '';
-
     try {
       // 1. Upload Photos to Supabase Storage
       const photoUploadPromises = formData.photos.map(async (file) => {
@@ -179,25 +177,30 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
       });
       const photoUrls = await Promise.all(photoUploadPromises);
 
-      // 2. Call Supabase Edge Function for AI Objective
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
-        body: JSON.stringify({
-          title: event.title,
-          objective: event.objective,
-          description: event.description,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // 2. Attempt to get AI-generated objective, with a fallback.
+      let aiObjective = event.objective; // Default to original objective
+      try {
+        const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
+          body: JSON.stringify({
+            title: event.title,
+            objective: event.objective,
+            description: event.description,
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (aiError) {
-        throw new Error(`AI service failed: ${aiError.message}`);
+        if (aiError) throw aiError;
+        if (aiData.error) throw new Error(aiData.error);
+        
+        aiObjective = aiData.objective; // Success: use AI objective
+      } catch (aiError: any) {
+        console.warn('AI objective generation failed, using fallback.', aiError);
+        toast.warning('Could not generate AI objective.', {
+          description: 'Using the original objective for the report. This might be due to a server configuration issue.',
+        });
       }
-      if (aiData.error) {
-        throw new Error(`AI service returned an error: ${aiData.error}`);
-      }
-      aiObjective = aiData.objective;
 
       // 3. Prepare Social Media Links
       const social_media_links: { [key: string]: string } = {};
@@ -214,7 +217,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           faculty_participants: formData.faculty_participants,
           external_participants: formData.external_participants,
           activity_lead_by: formData.activity_lead_by,
-          activity_duration_hours: durationHours, // Use calculated duration
+          activity_duration_hours: durationHours,
           final_report_remarks: formData.final_report_remarks,
           report_photo_urls: photoUrls,
           social_media_links,
