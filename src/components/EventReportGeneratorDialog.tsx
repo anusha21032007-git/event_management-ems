@@ -186,6 +186,9 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
           objective: event.objective,
           description: event.description,
         },
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (aiError) {
