@@ -81,7 +81,6 @@ const DeanIrDashboard = () => {
           <TableHeader>
             <TableRow className="bg-background border-b">
               <TableHead className="text-primary">Title</TableHead>
-              <TableHead className="text-primary">Dept/Club/Society</TableHead>
               <TableHead className="text-primary">Venue</TableHead>
               <TableHead className="text-primary">Date</TableHead>
               <TableHead className="text-primary">Status</TableHead>
@@ -91,11 +90,11 @@ const DeanIrDashboard = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : events.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">No events are currently pending your approval.</TableCell>
+                <TableCell colSpan={5} className="text-center">No events are currently pending your approval.</TableCell>
               </TableRow>
             ) : (
               events.map((event: any) => {
@@ -103,7 +102,6 @@ const DeanIrDashboard = () => {
                 return (
                   <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                     <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                    <TableCell>{event.department_club || 'N/A'}</TableCell>
                     <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
                       {event.venues?.name || event.other_venue_details || 'N/A'}
                     </TableCell>
