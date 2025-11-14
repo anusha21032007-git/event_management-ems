@@ -69,9 +69,10 @@ const formatTime12Hour = (time24: string | null | undefined): string => {
   }
 };
 
-const ReportRow = ({ label, value }: { label: string; value: any }) => {
+// Helper component for displaying data in the new two-column report format
+const ReportField = ({ label, value }: { label: string; value: any }) => {
   const processValue = (val: any): React.ReactNode => {
-    if (val === null || val === undefined) return 'N/A';
+    if (val === null || val === undefined || val === 0 || val === '') return 'N/A';
     if (Array.isArray(val)) {
       if (val.length === 0) return 'N/A';
       
@@ -99,12 +100,13 @@ const ReportRow = ({ label, value }: { label: string; value: any }) => {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0 last:border-b-0">
-      <div className="font-semibold text-sm text-gray-600">{label}</div>
-      <div className="col-span-2 text-sm text-gray-800">{processValue(value)}</div>
+    <div className="py-1">
+      <strong className="text-gray-600">{label}:</strong>
+      <span className="text-gray-800 ml-1">{processValue(value)}</span>
     </div>
   );
 };
+
 
 const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwardedRef: React.Ref<HTMLDivElement> }) => {
   if (!data) return null;
@@ -131,6 +133,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
   const uniqueId = data.unique_code || 'N/A';
   const referenceNumber = `ACE/IQAC/Events/${academicYear}/${departmentClub}/${uniqueId}`;
 
+  const venueDetails = data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : data.other_venue_details || 'N/A';
 
   return (
     <div className="printable-report" ref={forwardedRef}>
@@ -138,7 +141,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
         <div className="absolute top-4 right-4 text-sm font-mono bg-gray-100 p-2 rounded border">
           ID: {data.unique_code || 'N/A'}
         </div>
-        {/* College Header */}
+        {/* College Header (KEEPING AS REQUESTED) */}
         <div className="text-center mb-2">
           <h1 className="text-lg font-bold text-gray-800">Adhiyamaan College of Engineering</h1>
           <p className="text-sm text-gray-600">(An Autonomous Institution)</p>
@@ -146,94 +149,82 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
           <h2 className="text-base font-semibold text-gray-700 mt-2">Internal Quality Assurance Cell (IQAC)</h2>
         </div>
         
-        {/* New Reference Number Line (Left Aligned) */}
+        {/* Reference Number Line (KEEPING AS REQUESTED) */}
         <div className="text-left mb-4">
           <p className="text-sm font-medium text-gray-700">{referenceNumber}</p>
         </div>
         
-        {/* Form Title */}
+        {/* Form Title (KEEPING AS REQUESTED) */}
         <h3 className="text-center text-base font-bold underline mb-4">Event Registration and Approval Form</h3>
 
-        {/* Bordered Content */}
-        <div className="border border-gray-400">
-          {/* Table Headers */}
-          <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
-            <div className="col-span-1">Section</div>
-            <div className="col-span-2">Details</div>
+        {/* --- Main Content (Two-Column Layout based on images) --- */}
+        <div className="border border-gray-400 p-4 space-y-4">
+          
+          {/* Section 1: Program Details */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-b pb-4">
+            <ReportField label="Academic Year" value={data.academic_year} />
+            <ReportField label="Program driven by" value={data.program_driven_by} />
+
+            <ReportField label="Quarter" value={data.quarter} />
+            <ReportField label="Program/Activity Name" value={data.title} />
+
+            <ReportField label="Program Type" value={data.program_type} />
+            <ReportField label="Activity Lead By" value={data.activity_lead_by} />
+
+            <ReportField label="Program Theme" value={data.program_theme} />
+            <ReportField label="Duration of the activity (In Hrs)" value={data.activity_duration_hours} />
+          </div>
+          
+          {/* Section 2: Schedule & Venue */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-b pb-4">
+            <ReportField label="Start Date" value={data.event_date ? format(new Date(data.event_date), 'PPP') : 'N/A'} />
+            <ReportField label="End Date" value={data.end_date ? format(new Date(data.end_date), 'PPP') : 'N/A'} />
+            
+            <ReportField label="Start Time" value={formatTime12Hour(data.start_time)} />
+            <ReportField label="End Time" value={formatTime12Hour(data.end_time)} />
+            
+            <div className="col-span-2 py-1">
+              <strong className="text-gray-600">Venue:</strong>
+              <span className="text-gray-800 ml-1">{venueDetails}</span>
+            </div>
           </div>
 
-          {/* Table Body */}
-          <div className="p-2">
-            <ReportRow label="Event Title" value={data.title} />
-            <ReportRow label="Department/Club" value={data.department_club} />
-            <ReportRow label="Academic Year" value={data.academic_year} />
-            <ReportRow label="Program Driven By" value={data.program_driven_by} />
-            <ReportRow label="Quarter" value={data.quarter} />
-            <ReportRow label="Program Type" value={data.program_type} />
-            <ReportRow label="Program Theme" value={data.program_theme} />
-            <ReportRow label="Mode of Event" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
-            <ReportRow label="Date" value={format(new Date(data.event_date), 'PPP')} />
-            <ReportRow label="Time" value={`${formatTime12Hour(data.start_time)} - ${formatTime12Hour(data.end_time)}`} />
-            <ReportRow label="Venue" value={data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : 'N/A'} />
-            <ReportRow label="Expected Participants" value={data.expected_audience} />
-            <ReportRow label="Description" value={data.description || '(No description was provided for this event)'} />
-            <ReportRow label="Objective" value={data.objective} />
-            <ReportRow label="Proposed Outcomes" value={data.proposed_outcomes} />
-            <ReportRow label="Category" value={data.category} />
-            <ReportRow label="Target Audience" value={data.target_audience} />
-            <ReportRow label="SDG Alignment" value={data.sdg_alignment} />
-            <ReportRow label="Coordinators" value={
-              (data.coordinator_name || []).length > 0 ? (
-                <div className="space-y-1">
-                  {(data.coordinator_name || []).map((name: string, index: number) => (
-                    <div key={index}>{name} ({(data.coordinator_contact || [])[index] || 'No contact'})</div>
-                  ))}
-                </div>
-              ) : null
-            } />
-            <ReportRow label="Speakers/Resource Persons" value={
-              (data.speakers || []).length > 0 ? (
-                <div className="space-y-1">
-                  {(data.speakers || []).map((name: string, index: number) => (
-                    <div key={index}><strong>{name}</strong>: {(data.speaker_details || [])[index] || 'No details'}</div>
-                  ))}
-                </div>
-              ) : null
-            } />
-            <ReportRow label="Budget Estimate" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
-            <ReportRow label="Funding Source" value={data.budget_estimate > 0 ? data.funding_source : 'N/A (No budget)'} />
-            <ReportRow label="Promotion Strategy" value={data.promotion_strategy} />
-            <ReportRow label="HOD Approval" value={formatApproval(data.hod_approval_at)} />
-            <ReportRow label="Dean Approval" value={formatApproval(data.dean_approval_at)} />
-            <ReportRow label="Principal Approval" value={formatApproval(data.principal_approval_at)} />
-            <ReportRow label="Final Remarks" value={data.remarks} />
+          {/* Section 3: Participants & Expenditure */}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm border-b pb-4">
+            <ReportField label="Number of Student Participants" value={data.student_participants} />
+            <ReportField label="Number of Faculty Participants" value={data.faculty_participants} />
+
+            <ReportField label="Number of External Participants, if any" value={data.external_participants} />
+            <ReportField label="Expenditure Amount, If any" value={`₹${data.budget_estimate?.toFixed(2) || '0.00'}`} />
+            
+            <ReportField label="Mode of Session delivery" value={data.mode_of_event ? String(data.mode_of_event).charAt(0).toUpperCase() + String(data.mode_of_event).slice(1) : 'N/A'} />
+            <ReportField label="Department/Club" value={data.department_club} />
           </div>
-        </div>
-        
-        {/* --- Post-Event Report Section (Overview/Summary) --- */}
-        {(data.final_report_remarks) && (
-          <div className="border border-gray-400 mt-6">
-            <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
-              <div className="col-span-3">POST-EVENT OVERVIEW / SUMMARY</div>
-            </div>
-            <div className="p-2">
-              <ReportRow label="Final Report Remarks" value={data.final_report_remarks} />
+          
+          {/* Section 4: Overview (Objective & Benefit) */}
+          <div className="border border-gray-400">
+            <div className="p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">OVERVIEW</div>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 p-2 text-sm">
+                <div className="py-1">
+                    <strong>Objective:</strong>
+                    <p className="text-xs text-gray-700 mt-1">{data.objective || 'N/A'}</p>
+                </div>
+                <div className="py-1">
+                    <strong>Benefit in terms of learning/Skill/Knowledge obtained:</strong>
+                    <p className="text-xs text-gray-700 mt-1">{data.proposed_outcomes || 'N/A'}</p>
+                </div>
             </div>
           </div>
-        )}
-        {/* --- End Post-Event Report Section --- */}
-        
-        {/* --- Post-Event Evidence Section (Photos/Links) --- */}
-        {((data.report_photo_urls && data.report_photo_urls.length > 0) || (data.social_media_links && data.social_media_links.length > 0)) && (
-          <div className="border border-gray-400 mt-6">
-            <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
-              <div className="col-span-3">POST-EVENT EVIDENCE</div>
-            </div>
-            <div className="p-2">
-              <ReportRow label="Social Media Links" value={data.social_media_links} />
+          
+          {/* Section 5: Attachments and Promotion */}
+          <div className="border border-gray-400">
+            <div className="p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">ATTACHMENTS & PROMOTION IN SOCIAL MEDIA</div>
+            <div className="p-2 space-y-2">
+              <ReportField label="Video/Social Media Links" value={data.social_media_links} />
+              <ReportField label="Final Report Remarks (Coordinator Summary)" value={data.final_report_remarks} />
               
-              <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0">
-                <div className="font-semibold text-sm text-gray-600">Evidence Photos</div>
+              <div className="grid grid-cols-3 gap-4 py-2 border-t border-gray-200">
+                <div className="font-semibold text-sm text-gray-600">Evidence Photos (Max 3)</div>
                 <div className="col-span-2 text-sm text-gray-800">
                   {(data.report_photo_urls && data.report_photo_urls.length > 0) ? (
                     <div className="grid grid-cols-3 gap-2">
@@ -248,8 +239,20 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
               </div>
             </div>
           </div>
-        )}
-        {/* --- End Post-Event Evidence Section --- */}
+          
+          {/* Section 6: Approvals */}
+          <div className="border border-gray-400">
+            <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
+              <div className="col-span-3">APPROVAL STATUS</div>
+            </div>
+            <div className="p-2 grid grid-cols-3 gap-4 text-xs">
+                <div><strong>HOD:</strong> {formatApproval(data.hod_approval_at)}</div>
+                <div><strong>Dean IR:</strong> {formatApproval(data.dean_approval_at)}</div>
+                <div><strong>Principal:</strong> {formatApproval(data.principal_approval_at)}</div>
+            </div>
+        </div>
+        
+        </div>
       </div>
     </div>
   );

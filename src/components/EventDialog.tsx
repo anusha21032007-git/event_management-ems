@@ -150,12 +150,19 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   
-  // New Program Detail Fields
+  // Program Detail Fields
   academic_year: z.string().min(1, 'Academic year is required'),
   program_driven_by: z.string().min(1, 'This field is required'),
   quarter: z.string().min(1, 'This field is required'),
   program_type: z.string().min(1, 'This field is required'),
   program_theme: z.string().min(1, 'This field is required'),
+  
+  // NEW FIELDS
+  activity_lead_by: z.string().min(1, 'Activity Lead By is required'),
+  activity_duration_hours: z.coerce.number().int().positive('Duration must be a positive number').min(1, 'Duration is required'),
+  student_participants: z.coerce.number().int().min(0, 'Cannot be negative').optional().nullable(),
+  faculty_participants: z.coerce.number().int().min(0, 'Cannot be negative').optional().nullable(),
+  external_participants: z.coerce.number().int().min(0, 'Cannot be negative').optional().nullable(),
 
   coordinators: z.array(coordinatorSchema).min(1, 'At least one coordinator is required'),
   speakers_list: z.array(speakerSchema).optional(),
@@ -164,12 +171,12 @@ const formSchema = z.object({
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
-  objective: z.string().min(1, 'Objective is required').max(99, 'Objective must be 99 characters or less.'), // Corrected limit
+  objective: z.string().min(1, 'Objective is required').max(99, 'Objective must be 99 characters or less.'),
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
-  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(149, 'Proposed Outcomes must be 149 characters or less.'), // Corrected limit
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(149, 'Proposed Outcomes must be 149 characters or less.'),
   
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
@@ -186,9 +193,8 @@ const formSchema = z.object({
   
   poster_url: z.string().optional(),
   
-  // New field for coordinator's resubmission reason
   coordinator_resubmission_reason: z.string().optional(), 
-  status: z.string().optional(), // Added status to schema for validation logic
+  status: z.string().optional(),
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -270,6 +276,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       quarter: undefined,
       program_type: undefined,
       program_theme: undefined,
+      
+      // NEW DEFAULTS
+      activity_lead_by: '',
+      activity_duration_hours: 1,
+      student_participants: undefined,
+      faculty_participants: undefined,
+      external_participants: undefined,
+
       department_club: '',
       mode_of_event: undefined,
       category: [],
@@ -294,8 +308,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       coordinators: [{ name: '', contact: '' }],
       speakers_list: [{ name: '', details: '', contact: '' }],
       poster_url: '',
-      coordinator_resubmission_reason: '', // Default value for new field
-      status: 'pending_hod', // Default status for new event
+      coordinator_resubmission_reason: '',
+      status: 'pending_hod',
     },
   });
 
@@ -384,6 +398,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         quarter: event.quarter || '',
         program_type: event.program_type || '',
         program_theme: event.program_theme || '',
+        
+        // NEW FIELDS RESET
+        activity_lead_by: event.activity_lead_by || '',
+        activity_duration_hours: event.activity_duration_hours ?? 1,
+        student_participants: event.student_participants ?? undefined,
+        faculty_participants: event.faculty_participants ?? undefined,
+        external_participants: event.external_participants ?? undefined,
+
         end_date: event.end_date || '',
         expected_audience: event.expected_audience ?? null,
         budget_estimate: event.budget_estimate ?? null,
@@ -401,8 +423,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         venue_id: isOtherVenue ? 'other' : event.venue_id,
         other_venue_details: event.other_venue_details || '',
         poster_url: event.poster_url || '',
-        coordinator_resubmission_reason: event.coordinator_resubmission_reason || '', // Load existing reason if any
-        status: event.status, // Load status for validation logic
+        coordinator_resubmission_reason: event.coordinator_resubmission_reason || '',
+        status: event.status,
       });
       setPosterFile(null);
     } else {
@@ -421,7 +443,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         budget_estimate: undefined,
         poster_url: '',
         coordinator_resubmission_reason: '',
-        status: 'pending_hod', // Default status for new event
+        status: 'pending_hod',
+        
+        // NEW DEFAULTS
+        activity_lead_by: '',
+        activity_duration_hours: 1,
+        student_participants: undefined,
+        faculty_participants: undefined,
+        external_participants: undefined,
       });
       setPosterFile(null);
     }
@@ -489,6 +518,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         quarter: values.quarter,
         program_type: values.program_type,
         program_theme: values.program_theme,
+        
+        // NEW FIELDS MAPPING
+        activity_lead_by: values.activity_lead_by,
+        activity_duration_hours: values.activity_duration_hours,
+        student_participants: values.student_participants,
+        faculty_participants: values.faculty_participants,
+        external_participants: values.external_participants,
+
         event_date: values.event_date,
         end_date: values.end_date || null,
         start_time: values.start_time,
@@ -509,11 +546,9 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         budget_estimate: values.budget_estimate || 0,
         funding_source: finalFunding,
         promotion_strategy: finalPromotion,
-        // Note: Approval timestamps are handled below for updates/resubmissions
         venue_id: values.venue_id === 'other' ? null : values.venue_id,
         other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
         poster_url: finalPosterUrl,
-        // Include the new resubmission reason field
         coordinator_resubmission_reason: values.coordinator_resubmission_reason || null,
       };
 
@@ -537,22 +572,19 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
         
         if (event.status === 'returned_to_coordinator') {
-          // FIX: Use 'resubmitted' status to clearly mark it as a resubmission
           newStatus = 'resubmitted';
         }
         
         const { error: updateError } = await supabase.from('events').update({ 
           ...eventData, 
           status: newStatus, 
-          remarks: null, // Clear previous remarks upon resubmission
-          // Reset ALL approval timestamps to enforce full restart
+          remarks: null,
           hod_approval_at: null,
           dean_approval_at: null,
           principal_approval_at: null,
         }).eq('id', event.id);
         error = updateError;
       } else {
-        // For new events, clear the resubmission reason
         const { error: insertError } = await supabase.from('events').insert({ 
           ...eventData, 
           submitted_by: user.id,
@@ -674,6 +706,10 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <div className="md:col-span-2">
                       <FormField control={form.control} name="program_type" render={({ field }) => (<FormItem><FormLabel>Program Type</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl><SelectContent>{PROGRAM_TYPES.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
+                    
+                    {/* NEW FIELDS: Activity Lead and Duration */}
+                    <FormField control={form.control} name="activity_lead_by" render={({ field }) => (<FormItem><FormLabel>Activity Lead By</FormLabel><FormControl><Input placeholder="e.g., Dr. A. Kumar" {...field} disabled={isReadOnly} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="activity_duration_hours" render={({ field }) => (<FormItem><FormLabel>Duration of the activity (In Hrs)</FormLabel><FormControl><Input type="number" placeholder="e.g., 4" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
 
@@ -772,7 +808,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                           placeholder="State the main objective" 
                           {...field} 
                           disabled={isReadOnly} 
-                          maxLength={99} // Enforce max length
+                          maxLength={99}
                         />
                       </FormControl>
                       <FormMessage />
@@ -785,17 +821,14 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
-                  <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
-                  <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
-                </div>
-
-                <div className="space-y-4 md:col-span-2">
-                  <h3 className="text-lg font-semibold border-b pb-2">Target Audience</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2">Target Audience & Participants</h3>
                   <FormField control={form.control} name="target_audience" render={() => (<FormItem><div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">{TARGET_AUDIENCES.map((item) => (<FormField key={item} control={form.control} name="target_audience" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal capitalize">{item}</FormLabel></FormItem>)} />))}</div>{form.watch('target_audience').includes('others') && (<FormField control={form.control} name="target_audience_others" render={({ field }) => (<FormItem className="mt-2"><FormLabel>Specify Other Audience</FormLabel><FormControl><Input {...field} disabled={isReadOnly} /></FormControl></FormItem>)} />)}<FormMessage /></FormItem>)} />
-                </div>
-
-                <div className="space-y-4 md:col-span-2">
-                  <FormField control={form.control} name="expected_audience" render={({ field }) => (<FormItem><FormLabel>Expected No. of Participants</FormLabel><FormControl><Input type="number" placeholder="e.g., 100" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField control={form.control} name="student_participants" render={({ field }) => (<FormItem><FormLabel>Student Participants</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="faculty_participants" render={({ field }) => (<FormItem><FormLabel>Faculty Participants</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="external_participants" render={({ field }) => (<FormItem><FormLabel>External Participants</FormLabel><FormControl><Input type="number" placeholder="0" {...field} disabled={isReadOnly} value={field.value ?? ''} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
@@ -812,12 +845,17 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                           placeholder="Expected results or benefits" 
                           {...field} 
                           disabled={isReadOnly} 
-                          maxLength={149} // Enforce max length
+                          maxLength={149}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
+                </div>
+                
+                <div className="space-y-4 md:col-span-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">Alignment with SDGs</h3>
+                  <FormField control={form.control} name="sdg_alignment" render={() => (<FormItem><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">{SDG_GOALS.map((item) => (<FormField key={item} control={form.control} name="sdg_alignment" render={({ field }) => (<FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => { const currentValues = field.value ?? []; return checked ? field.onChange([...currentValues, item]) : field.onChange(currentValues.filter((value) => value !== item)); }} disabled={isReadOnly} /></FormControl><FormLabel className="font-normal">{item}</FormLabel></FormItem>)} />))}</div><FormMessage /></FormItem>)} />
                 </div>
 
                 <div className="space-y-4 md:col-span-2 border p-4 rounded-lg">
