@@ -15,13 +15,17 @@ import { ScrollArea } from './ui/scroll-area';
 import { MessageSquare } from 'lucide-react';
 
 type EventHistory = {
-  id: number;
+  id: string; // Changed from number to string/uuid
   event_id: string;
-  status: string;
+  old_status: string | null;
+  new_status: string;
   remarks: string | null;
   created_at: string;
-  actor_role: string;
-  actor_name: string;
+  profiles: {
+    role: string;
+    first_name: string;
+    last_name: string;
+  } | null;
 };
 
 type ReturnReasonDialogProps = {
@@ -35,6 +39,7 @@ const roleDisplayMap: Record<string, string> = {
   dean: 'Dean IR',
   principal: 'Principal',
   coordinator: 'Coordinator',
+  admin: 'Admin',
 };
 
 const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps) => {
@@ -51,11 +56,12 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
         .from('event_history')
         .select(`
           id,
-          status,
+          event_id,
+          old_status,
+          new_status,
           remarks,
           created_at,
-          actor_role,
-          actor_name
+          profiles ( role, first_name, last_name )
         `)
         .eq('event_id', event.id)
         .order('created_at', { ascending: false });
@@ -64,7 +70,7 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
         toast.error('Failed to fetch event history.');
         console.error('Error fetching history:', error);
       } else {
-        setHistory(data || []);
+        setHistory(data as EventHistory[] || []);
       }
       setLoading(false);
     };
@@ -74,6 +80,19 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
 
   const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace('dean', 'Dean IR').toUpperCase();
+  };
+  
+  const getActorName = (record: EventHistory) => {
+    if (record.profiles) {
+      return `${record.profiles.first_name} ${record.profiles.last_name}`;
+    }
+    // Fallback for system actions where profiles might be null
+    return 'System/Unknown';
+  };
+  
+  const getActorRole = (record: EventHistory) => {
+    const role = record.profiles?.role || 'admin'; // Default to admin if profile is missing (e.g., system trigger)
+    return roleDisplayMap[role] || role;
   };
 
   return (
@@ -97,14 +116,14 @@ const ReturnReasonDialog = ({ isOpen, onClose, event }: ReturnReasonDialogProps)
                 <div key={record.id} className="border-l-4 border-primary/50 pl-4 py-2 bg-accent/50 rounded-r-md">
                   <div className="flex justify-between items-start">
                     <p className="font-semibold text-sm">
-                      {roleDisplayMap[record.actor_role] || record.actor_role} ({record.actor_name})
+                      {getActorRole(record)} ({getActorName(record)})
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(record.created_at), 'MMM d, yyyy h:mm a')}
                     </p>
                   </div>
                   <p className="text-sm mt-1">
-                    <span className="font-medium">Status Change:</span> {formatStatus(record.status)}
+                    <span className="font-medium">Status Change:</span> {formatStatus(record.old_status || 'N/A')} &rarr; {formatStatus(record.new_status)}
                   </p>
                   {record.remarks && (
                     <div className="mt-2 p-2 bg-background border rounded-md">
