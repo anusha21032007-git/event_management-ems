@@ -256,7 +256,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
             <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
               <div className="col-span-3">APPROVAL STATUS</div>
             </div>
-            <div className="p-2 grid grid-cols-3 gap-4 text-xs">
+            <div className="p-2 grid grid-cols-3 gap-4 text-sm">
                 <div><strong>HOD:</strong> {formatApproval(data.hod_approval_at)}</div>
                 <div><strong>Dean IR:</strong> {formatApproval(data.dean_approval_at)}</div>
                 <div><strong>Principal:</strong> {formatApproval(data.principal_approval_at)}</div>
