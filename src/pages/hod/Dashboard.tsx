@@ -88,7 +88,7 @@ const HodDashboard = () => {
           <TableHeader>
             <TableRow className="bg-background border-b">
               <TableHead className="text-primary">Title</TableHead>
-              {showSubmittedBy && <TableHead className="text-primary">Submitted By</TableHead>}
+              {/* Removed Submitted By column */}
               <TableHead className="text-primary">Venue</TableHead>
               <TableHead className="text-primary">Date</TableHead>
               <TableHead className="text-primary">Status</TableHead>
@@ -98,11 +98,11 @@ const HodDashboard = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={showSubmittedBy ? 6 : 5} className="text-center">Loading...</TableCell>
+                <TableCell colSpan={5} className="text-center">Loading...</TableCell>
               </TableRow>
             ) : eventsList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showSubmittedBy ? 6 : 5} className="text-center">No events found in this category.</TableCell>
+                <TableCell colSpan={5} className="text-center">No events found in this category.</TableCell>
               </TableRow>
             ) : (
               eventsList.map((event: any) => {
@@ -110,7 +110,6 @@ const HodDashboard = () => {
                 return (
                   <TableRow key={event.id} className="bg-accent hover:bg-accent/80 transition-colors">
                     <TableCell className="font-medium text-blue-600">{event.title}</TableCell>
-                    {showSubmittedBy && <TableCell>{event.profiles?.first_name} {event.profiles?.last_name}</TableCell>}
                     <TableCell className={isPending ? "font-semibold text-blue-600" : ""}>
                       {event.venues?.name || event.other_venue_details || 'N/A'}
                     </TableCell>
@@ -156,11 +155,13 @@ const HodDashboard = () => {
         </TabsList>
 
         <TabsContent value="pending">
-          {renderEventTable(pendingEvents, "Events Requiring My Approval", true)}
+          {/* Note: showSubmittedBy is now false, but the function signature requires it. The column is removed inside renderEventTable */}
+          {renderEventTable(pendingEvents, "Events Requiring My Approval", false)} 
         </TabsContent>
         
         <TabsContent value="all">
-          {renderEventTable(allEvents, "All Events Submitted by Department Coordinators", true)}
+          {/* Note: showSubmittedBy is now false, but the function signature requires it. The column is removed inside renderEventTable */}
+          {renderEventTable(allEvents, "All Events Submitted by Department Coordinators", false)}
         </TabsContent>
       </Tabs>
 
