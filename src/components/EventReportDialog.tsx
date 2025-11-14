@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Download, UploadCloud, Image, MessageSquare, Link as LinkIcon } from 'lucide-react';
+import { Download, UploadCloud, Image, MessageSquare, Link as LinkIcon, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -210,14 +210,26 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
           </div>
         </div>
         
-        {/* --- Post-Event Report Section --- */}
-        {(data.final_report_remarks || (data.report_photo_urls && data.report_photo_urls.length > 0) || (data.social_media_links && data.social_media_links.length > 0)) && (
+        {/* --- Post-Event Report Section (Overview/Summary) --- */}
+        {(data.final_report_remarks) && (
           <div className="border border-gray-400 mt-6">
             <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
-              <div className="col-span-3">POST-EVENT REPORT (EVIDENCE)</div>
+              <div className="col-span-3">POST-EVENT OVERVIEW / SUMMARY</div>
             </div>
             <div className="p-2">
               <ReportRow label="Final Report Remarks" value={data.final_report_remarks} />
+            </div>
+          </div>
+        )}
+        {/* --- End Post-Event Report Section --- */}
+        
+        {/* --- Post-Event Evidence Section (Photos/Links) --- */}
+        {((data.report_photo_urls && data.report_photo_urls.length > 0) || (data.social_media_links && data.social_media_links.length > 0)) && (
+          <div className="border border-gray-400 mt-6">
+            <div className="grid grid-cols-3 gap-4 p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">
+              <div className="col-span-3">POST-EVENT EVIDENCE</div>
+            </div>
+            <div className="p-2">
               <ReportRow label="Social Media Links" value={data.social_media_links} />
               
               <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-200 last:border-b-0">
@@ -237,7 +249,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
             </div>
           </div>
         )}
-        {/* --- End Post-Event Report Section --- */}
+        {/* --- End Post-Event Evidence Section --- */}
       </div>
     </div>
   );
@@ -285,13 +297,12 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
       setReportData(data);
       
       // Reset form with fetched data
+      const links = (data.social_media_links as { url: string }[] || []).filter(link => link.url);
+      
       form.reset({
         final_report_remarks: data.final_report_remarks || '',
-        social_media_links: (data.social_media_links as { url: string }[] || [{ url: '' }]).filter(link => link.url),
+        social_media_links: links.length > 0 ? links : [{ url: '' }],
       });
-      if (data.social_media_links?.length === 0) {
-        form.reset({ social_media_links: [{ url: '' }] });
-      }
       
       // Clear files on fetch
       setReportFiles([]);
@@ -451,7 +462,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
                         name="final_report_remarks"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Final Report Remarks (Summary/Outcome)</FormLabel>
+                            <FormLabel>Final Report Remarks (Overview/Summary)</FormLabel>
                             <FormControl>
                               <Textarea 
                                 placeholder="Provide a brief summary of the event execution and final outcomes." 
