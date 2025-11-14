@@ -164,12 +164,12 @@ const formSchema = z.object({
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
-  objective: z.string().min(1, 'Objective is required').max(99, 'Objective must be 99 characters or less.'), // Updated limit
+  objective: z.string().min(1, 'Objective is required').max(99, 'Objective must be 99 characters or less.'), // Corrected limit
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
-  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(149, 'Proposed Outcomes must be 149 characters or less.'), // Updated limit
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(149, 'Proposed Outcomes must be 149 characters or less.'), // Corrected limit
   
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
@@ -768,7 +768,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         </span>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="State the main objective" {...field} disabled={isReadOnly} />
+                        <Textarea 
+                          placeholder="State the main objective" 
+                          {...field} 
+                          disabled={isReadOnly} 
+                          maxLength={99} // Enforce max length
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -803,7 +808,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         </span>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="Expected results or benefits" {...field} disabled={isReadOnly} />
+                        <Textarea 
+                          placeholder="Expected results or benefits" 
+                          {...field} 
+                          disabled={isReadOnly} 
+                          maxLength={149} // Enforce max length
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
