@@ -1,4 +1,3 @@
-Dean -> Principal) by setting the status to 'pending_hod' and resetting all approval timestamps.">
 import { useEffect, useState, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +40,7 @@ import { format } from 'date-fns';
 import TimePicker from './TimePicker';
 import ReturnReasonDialog from './ReturnReasonDialog';
 import { useDropzone } from 'react-dropzone';
-import PosterDialog from './PosterDialog'; // New Import
+import PosterDialog from './PosterDialog';
 
 // --- Helper Functions ---
 
@@ -510,9 +509,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         budget_estimate: values.budget_estimate || 0,
         funding_source: finalFunding,
         promotion_strategy: finalPromotion,
-        hod_approval_at: null,
-        dean_approval_at: null,
-        principal_approval_at: null,
+        // Note: Approval timestamps are handled below for updates/resubmissions
         venue_id: values.venue_id === 'other' ? null : values.venue_id,
         other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
         poster_url: finalPosterUrl,
@@ -540,7 +537,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         let newStatus: 'pending_hod' | 'pending_dean' | 'pending_principal' | 'resubmitted' = 'pending_hod';
         
         if (event.status === 'returned_to_coordinator') {
-          // --- FIX: Always restart the approval chain at HOD ---
+          // Enforce full restart of the approval chain: HOD -> Dean -> Principal
           newStatus = 'pending_hod';
         }
         
@@ -753,7 +750,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
                 <div className="space-y-4 md:col-span-2">
                   <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
-                  <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
