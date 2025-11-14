@@ -24,8 +24,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Badge } from './ui/badge';
-import { Image } from 'lucide-react';
+import { Image, MessageSquare } from 'lucide-react';
 import PosterDialog from './PosterDialog';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Terminal } from 'lucide-react';
 
 const formSchema = z.object({
   remarks: z.string().optional(),
@@ -78,6 +80,8 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPosterDialogOpen, setIsPosterDialogOpen] = useState(false);
   const actions = roleActions[role];
+  
+  const isResubmitted = event.status === 'resubmitted';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -161,6 +165,16 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
             </DialogDescription>
           </DialogHeader>
           
+          {isResubmitted && event.coordinator_resubmission_reason && (
+            <Alert variant="default" className="bg-indigo-100 border-indigo-400 text-indigo-800">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Coordinator Resubmission Reason</AlertTitle>
+              <AlertDescription>
+                {event.coordinator_resubmission_reason}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {event.poster_url && (
             <div className="flex justify-end">
               <Button 
@@ -184,7 +198,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
               </div>
               <div><strong>Date:</strong> {format(new Date(event.event_date), 'PPP')}</div>
               <div><strong>Time:</strong> {formatTime12Hour(event.start_time)} - {formatTime12Hour(event.end_time)}</div>
-              <div><strong>Venue:</strong> {event.venues?.name || 'N/A'}</div>
+              <div><strong>Venue:</strong> {event.venues?.name || event.other_venue_details || 'N/A'}</div>
               <div><strong>Expected Participants:</strong> {event.expected_audience || 'N/A'}</div>
             </div>
 
@@ -274,7 +288,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
         </DialogContent>
       </Dialog>
       
-      {event.poster_url && (
+      {selectedEvent && (
         <PosterDialog
           isOpen={isPosterDialogOpen}
           onClose={() => setIsPosterDialogOpen(false)}

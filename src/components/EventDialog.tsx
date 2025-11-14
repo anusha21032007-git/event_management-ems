@@ -184,7 +184,10 @@ const formSchema = z.object({
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
   
-  poster_url: z.string().optional(), 
+  poster_url: z.string().optional(),
+  
+  // New field for coordinator's resubmission reason
+  coordinator_resubmission_reason: z.string().optional(), 
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -235,6 +238,15 @@ const formSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: `Proposed Outcomes must be 149 words or less. Current count: ${outcomeWordCount}`,
       path: ['proposed_outcomes'],
+    });
+  }
+  
+  // Resubmission reason required if status is returned_to_coordinator
+  if (data.status === 'returned_to_coordinator' && !data.coordinator_resubmission_reason?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A reason for resubmission is required.',
+      path: ['coordinator_resubmission_reason'],
     });
   }
 });
@@ -301,6 +313,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       coordinators: [{ name: '', contact: '' }],
       speakers_list: [{ name: '', details: '', contact: '' }],
       poster_url: '',
+      coordinator_resubmission_reason: '', // Default value for new field
     },
   });
 
@@ -406,6 +419,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         venue_id: isOtherVenue ? 'other' : event.venue_id,
         other_venue_details: event.other_venue_details || '',
         poster_url: event.poster_url || '',
+        coordinator_resubmission_reason: event.coordinator_resubmission_reason || '', // Load existing reason if any
+        status: event.status, // Keep status for validation logic
       });
       setPosterFile(null);
     } else {
@@ -423,6 +438,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         expected_audience: undefined,
         budget_estimate: undefined,
         poster_url: '',
+        coordinator_resubmission_reason: '',
+        status: 'pending_hod', // Default status for new event
       });
       setPosterFile(null);
     }
@@ -516,6 +533,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         venue_id: values.venue_id === 'other' ? null : values.venue_id,
         other_venue_details: values.venue_id === 'other' ? values.other_venue_details : null,
         poster_url: finalPosterUrl,
+        // Include the new resubmission reason field
+        coordinator_resubmission_reason: values.coordinator_resubmission_reason || null,
       };
 
       const { data: isAvailable, error: checkError } = await supabase.rpc('check_venue_availability', {
@@ -551,7 +570,12 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         }).eq('id', event.id);
         error = updateError;
       } else {
-        const { error: insertError } = await supabase.from('events').insert({ ...eventData, submitted_by: user.id });
+        // For new events, clear the resubmission reason
+        const { error: insertError } = await supabase.from('events').insert({ 
+          ...eventData, 
+          submitted_by: user.id,
+          coordinator_resubmission_reason: null,
+        });
         error = insertError;
       }
 
@@ -597,6 +621,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   };
   
   const isReturnedOrRejected = event && ['returned_to_coordinator', 'returned_to_hod', 'returned_to_dean', 'rejected'].includes(event.status);
+  const isReturnedToCoordinator = event && event.status === 'returned_to_coordinator';
 
   return (
     <>
@@ -887,23 +912,45 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem><FormLabel>Dean IR Approval</FormLabel><Input value={event.dean_approval_at ? `Approved on ${format(new Date(event.dean_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.dean_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
                     <FormItem><FormLabel>Principal Approval</FormLabel><Input value={event.principal_approval_at ? `Approved on ${format(new Date(event.principal_approval_at), 'PPP p')}` : 'Pending'} disabled className={cn(event.principal_approval_at ? 'border-green-500' : 'border-yellow-500')} /></FormItem>
                   </div>
-                  <FormItem>
-                    <div className="flex justify-between items-center">
-                      <FormLabel>Last Approver Remarks</FormLabel>
-                      {isReturnedOrRejected && (
-                        <Button 
-                          type="button" 
-                          variant="link" 
-                          size="sm" 
-                          onClick={() => setIsReasonDialogOpen(true)}
-                          className="p-0 h-auto"
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" /> View Remarks History
-                        </Button>
-                      )}
-                    </div>
-                    <Textarea value={event.remarks || 'N/A'} disabled />
-                  </FormItem>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormItem>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Last Approver Remarks (Uneditable)</FormLabel>
+                        {isReturnedOrRejected && (
+                          <Button 
+                            type="button" 
+                            variant="link" 
+                            size="sm" 
+                            onClick={() => setIsReasonDialogOpen(true)}
+                            className="p-0 h-auto"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" /> View Remarks History
+                          </Button>
+                        )}
+                      </div>
+                      <Textarea value={event.remarks || 'N/A'} disabled />
+                    </FormItem>
+                    
+                    {isReturnedToCoordinator && (
+                      <FormField
+                        control={form.control}
+                        name="coordinator_resubmission_reason"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Reason for Resubmission (Required)</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Explain the changes made and why this event should be approved now." 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
 
