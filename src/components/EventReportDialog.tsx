@@ -86,9 +86,22 @@ const ReportField = ({ label, value }: { label: string; value: any }) => {
       if (typeof val[0] === 'object' && val[0].url) {
         return (
           <ul className="list-disc list-inside">
-            {val.map((item: { url: string }, index: number) => (
-              <li key={index}><a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{item.url}</a></li>
-            ))}
+            {val.map((item: { url: string }, index: number) => {
+              try {
+                const url = new URL(item.url);
+                // Extract domain and capitalize the first part (e.g., facebook.com -> Facebook)
+                const domain = url.hostname.replace('www.', '').split('.')[0];
+                const platformName = domain.charAt(0).toUpperCase() + domain.slice(1);
+                
+                return (
+                  <li key={index}>
+                    <strong className="font-medium">{platformName}:</strong> <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{item.url}</a>
+                  </li>
+                );
+              } catch {
+                return <li key={index} className="text-red-500">Invalid URL: {item.url}</li>;
+              }
+            })}
           </ul>
         );
       }
@@ -220,7 +233,6 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
             <div className="p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">ATTACHMENTS & PROMOTION IN SOCIAL MEDIA</div>
             <div className="p-2 space-y-2">
               <ReportField label="Video/Social Media Links" value={data.social_media_links} />
-              <ReportField label="Final Report Remarks (Coordinator Summary)" value={data.final_report_remarks} />
               
               <div className="grid grid-cols-3 gap-4 py-2 border-t border-gray-200">
                 <div className="font-semibold text-sm text-gray-600">Evidence Photos (Max 3)</div>
