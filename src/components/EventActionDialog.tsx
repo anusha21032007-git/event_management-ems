@@ -288,7 +288,7 @@ const EventActionDialog = ({ event, isOpen, onClose, onActionSuccess, role }: Ev
         </DialogContent>
       </Dialog>
       
-      {selectedEvent && (
+      {event && (
         <PosterDialog
           isOpen={isPosterDialogOpen}
           onClose={() => setIsPosterDialogOpen(false)}
