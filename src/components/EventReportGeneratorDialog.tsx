@@ -181,11 +181,11 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
 
       // 2. Call Supabase Edge Function for AI Objective
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-report-objective', {
-        body: {
+        body: JSON.stringify({
           title: event.title,
           objective: event.objective,
           description: event.description,
-        },
+        }),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -414,7 +414,7 @@ const EventReportGeneratorDialog = ({ event, isOpen, onClose }: EventReportGener
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select lead role" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {ACTIVITY_LEAD_BY_OPTIONS.map(option => (
