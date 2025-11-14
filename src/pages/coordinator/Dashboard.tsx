@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import EventReportGeneratorDialog from '@/components/EventReportGeneratorDialog'; // New Import
+import EventReportDialog from '@/components/EventReportDialog'; // Updated Import
 
 const statusColors = {
   pending_hod: 'bg-yellow-500',
@@ -46,7 +46,7 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isReturnReasonDialogOpen, setIsReturnReasonDialogOpen] = useState(false);
-  const [isReportGeneratorOpen, setIsReportGeneratorOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false); // Renamed state
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -94,7 +94,7 @@ const CoordinatorDashboard = () => {
   
   const handleDownloadReport = (event: any) => {
     setSelectedEvent(event);
-    setIsReportGeneratorOpen(true);
+    setIsReportDialogOpen(true); // Use the standard report dialog
   };
 
   const pendingEvents = allEvents.filter(e => e.status.startsWith('pending') || e.status === 'resubmitted');
@@ -246,12 +246,12 @@ const CoordinatorDashboard = () => {
         />
       )}
       
-      {selectedEvent && isReportGeneratorOpen && (
-        <EventReportGeneratorDialog
+      {selectedEvent && isReportDialogOpen && (
+        <EventReportDialog
           event={selectedEvent}
-          isOpen={isReportGeneratorOpen}
+          isOpen={isReportDialogOpen}
           onClose={() => {
-            setIsReportGeneratorOpen(false);
+            setIsReportDialogOpen(false);
             setSelectedEvent(null);
           }}
         />

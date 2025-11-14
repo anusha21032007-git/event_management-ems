@@ -44,10 +44,10 @@ import PosterDialog from './PosterDialog'; // New Import
 
 // --- Helper Functions ---
 
-// Helper function to count words
-const countWords = (text: string | null | undefined) => {
+// Helper function to count characters
+const countCharacters = (text: string | null | undefined) => {
   if (!text) return 0;
-  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  return text.length;
 };
 
 // Helper function to calculate the current academic year (Sep 1 - Aug 31)
@@ -164,12 +164,12 @@ const formSchema = z.object({
   mode_of_event: z.enum(['online', 'offline', 'hybrid'], { required_error: 'Mode of event is required' }),
   category: z.array(z.string()).min(1, 'Select at least one category'),
   category_others: z.string().optional(),
-  objective: z.string().min(1, 'Objective is required'),
+  objective: z.string().min(1, 'Objective is required').max(500, 'Objective must be 500 characters or less.'), // Changed to character limit
   sdg_alignment: z.array(z.string()).optional(),
   target_audience: z.array(z.string()).min(1, 'Select at least one target audience'),
   target_audience_others: z.string().optional(),
   expected_audience: z.coerce.number().int().positive('Must be a positive number').optional().nullable(),
-  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required'),
+  proposed_outcomes: z.string().min(1, 'Proposed outcomes are required').max(750, 'Proposed Outcomes must be 750 characters or less.'), // Changed to character limit
   
   budget_estimate: z.coerce.number().min(0, 'Budget cannot be negative').optional().nullable(),
   funding_source: z.array(z.string()).optional(),
@@ -188,6 +188,7 @@ const formSchema = z.object({
   
   // New field for coordinator's resubmission reason
   coordinator_resubmission_reason: z.string().optional(), 
+  status: z.string().optional(), // Added status to schema for validation logic
 }).refine(data => {
     if (!data.end_date) return true;
     return data.end_date >= data.event_date;
@@ -221,31 +222,11 @@ const formSchema = z.object({
     });
   }
   
-  // Word count validation for Objective (Max 99 words)
-  const objectiveWordCount = countWords(data.objective);
-  if (objectiveWordCount > 99) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Objective must be 99 words or less. Current count: ${objectiveWordCount}`,
-      path: ['objective'],
-    });
-  }
-
-  // Word count validation for Proposed Outcomes (Max 149 words)
-  const outcomeWordCount = countWords(data.proposed_outcomes);
-  if (outcomeWordCount > 149) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Proposed Outcomes must be 149 words or less. Current count: ${outcomeWordCount}`,
-      path: ['proposed_outcomes'],
-    });
-  }
-  
   // Resubmission reason required if status is returned_to_coordinator
   if (data.status === 'returned_to_coordinator' && !data.coordinator_resubmission_reason?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'A reason for resubmission is required.',
+      message: 'A reason for resubmission is mandatory.',
       path: ['coordinator_resubmission_reason'],
     });
   }
@@ -314,6 +295,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
       speakers_list: [{ name: '', details: '', contact: '' }],
       poster_url: '',
       coordinator_resubmission_reason: '', // Default value for new field
+      status: 'pending_hod', // Default status for new event
     },
   });
 
@@ -334,8 +316,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
   const academicYearOptions = getAcademicYearOptions();
   const objectiveValue = form.watch('objective');
   const outcomeValue = form.watch('proposed_outcomes');
-  const objectiveWordCount = countWords(objectiveValue);
-  const outcomeWordCount = countWords(outcomeValue);
+  const objectiveCharCount = countCharacters(objectiveValue);
+  const outcomeCharCount = countCharacters(outcomeValue);
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
@@ -420,7 +402,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         other_venue_details: event.other_venue_details || '',
         poster_url: event.poster_url || '',
         coordinator_resubmission_reason: event.coordinator_resubmission_reason || '', // Load existing reason if any
-        status: event.status, // Keep status for validation logic
+        status: event.status, // Load status for validation logic
       });
       setPosterFile(null);
     } else {
@@ -781,8 +763,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Objective of the Event</FormLabel>
-                        <span className={cn("text-xs", objectiveWordCount > 99 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {objectiveWordCount} / 99 words
+                        <span className={cn("text-xs", objectiveCharCount > 500 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {objectiveCharCount} / 500 characters
                         </span>
                       </div>
                       <FormControl>
@@ -816,8 +798,8 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                     <FormItem>
                       <div className="flex justify-between items-center">
                         <FormLabel>Proposed Outcomes</FormLabel>
-                        <span className={cn("text-xs", outcomeWordCount > 149 ? 'text-destructive' : 'text-muted-foreground')}>
-                          {outcomeWordCount} / 149 words
+                        <span className={cn("text-xs", outcomeCharCount > 750 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {outcomeCharCount} / 750 characters
                         </span>
                       </div>
                       <FormControl>
@@ -938,7 +920,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
                         name="coordinator_resubmission_reason"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Reason for Resubmission (Required)</FormLabel>
+                            <FormLabel>Reason for Resubmission (Mandatory)</FormLabel>
                             <FormControl>
                               <Textarea 
                                 placeholder="Explain the changes made and why this event should be approved now." 
