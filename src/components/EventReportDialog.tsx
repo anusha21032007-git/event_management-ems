@@ -235,7 +235,7 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
               <ReportField label="Video/Social Media Links" value={data.social_media_links} />
               
               <div className="grid grid-cols-3 gap-4 py-2 border-t border-gray-200">
-                <div className="font-semibold text-sm text-gray-600">Evidence Photos (Max 3)</div>
+                <div className="font-semibold text-sm text-gray-600">Evidence Photos (Uploaded from File Manager)</div>
                 <div className="col-span-2 text-sm text-gray-800">
                   {(data.report_photo_urls && data.report_photo_urls.length > 0) ? (
                     <div className="grid grid-cols-3 gap-2">
