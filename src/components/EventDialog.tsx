@@ -1,3 +1,4 @@
+Dean -> Principal) by setting the status to 'pending_hod' and resetting all approval timestamps.">
 import { useEffect, useState, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -539,26 +540,17 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
         let newStatus: 'pending_hod' | 'pending_dean' | 'pending_principal' | 'resubmitted' = 'pending_hod';
         
         if (event.status === 'returned_to_coordinator') {
-          // Determine where to resubmit based on the highest approval reached
-          if (event.dean_approval_at) {
-            // If Dean approved it, it must go to Principal (since Principal returns to Coordinator)
-            newStatus = 'pending_principal';
-          } else if (event.hod_approval_at) {
-            // If HOD approved it, it goes back to HOD (status 'resubmitted' for HOD dashboard visibility)
-            newStatus = 'resubmitted';
-          } else {
-            // Should not happen if it was returned, but default to HOD
-            newStatus = 'pending_hod';
-          }
+          // --- FIX: Always restart the approval chain at HOD ---
+          newStatus = 'pending_hod';
         }
         
         const { error: updateError } = await supabase.from('events').update({ 
           ...eventData, 
           status: newStatus, 
           remarks: null, // Clear previous remarks upon resubmission
-          // Only reset approval timestamps that are higher than the new status target
-          hod_approval_at: newStatus === 'pending_hod' ? null : event.hod_approval_at,
-          dean_approval_at: newStatus !== 'pending_principal' ? null : event.dean_approval_at,
+          // Reset ALL approval timestamps to enforce full restart
+          hod_approval_at: null,
+          dean_approval_at: null,
           principal_approval_at: null,
         }).eq('id', event.id);
         error = updateError;
@@ -761,7 +753,7 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
                 <div className="space-y-4 md:col-span-2">
                   <h3 className="text-lg font-semibold border-b pb-2">Event Mode</h3>
-                  <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormLabel></FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="mode_of_event" render={({ field }) => (<FormItem className="space-y-3"><FormLabel>Mode of Event</FormLabel><FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4" disabled={isReadOnly}><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="online" /></FormControl><FormLabel className="font-normal">Online</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="offline" /></FormControl><FormLabel className="font-normal">Offline</FormLabel></FormItem><FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="hybrid" /></FormControl><FormLabel className="font-normal">Hybrid</FormItem></RadioGroup></FormControl><FormMessage /></FormItem>)} />
                 </div>
 
                 <div className="space-y-4 md:col-span-2">
