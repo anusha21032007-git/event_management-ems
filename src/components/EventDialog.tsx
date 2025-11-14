@@ -536,18 +536,29 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       let error;
       if (isEditMode) {
-        // When resubmitting a returned event, set status to 'resubmitted' and reset approvals
-        let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
+        let newStatus: 'pending_hod' | 'pending_dean' | 'pending_principal' | 'resubmitted' = 'pending_hod';
+        
         if (event.status === 'returned_to_coordinator') {
-          newStatus = 'resubmitted';
+          // Determine where to resubmit based on the highest approval reached
+          if (event.dean_approval_at) {
+            // If Dean approved it, it must go to Principal (since Principal returns to Coordinator)
+            newStatus = 'pending_principal';
+          } else if (event.hod_approval_at) {
+            // If HOD approved it, it goes back to HOD (status 'resubmitted' for HOD dashboard visibility)
+            newStatus = 'resubmitted';
+          } else {
+            // Should not happen if it was returned, but default to HOD
+            newStatus = 'pending_hod';
+          }
         }
         
         const { error: updateError } = await supabase.from('events').update({ 
           ...eventData, 
           status: newStatus, 
           remarks: null, // Clear previous remarks upon resubmission
-          hod_approval_at: null,
-          dean_approval_at: null,
+          // Only reset approval timestamps that are higher than the new status target
+          hod_approval_at: newStatus === 'pending_hod' ? null : event.hod_approval_at,
+          dean_approval_at: newStatus !== 'pending_principal' ? null : event.dean_approval_at,
           principal_approval_at: null,
         }).eq('id', event.id);
         error = updateError;
