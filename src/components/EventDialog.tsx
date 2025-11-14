@@ -534,11 +534,11 @@ const EventDialog = ({ isOpen, onClose, onSuccess, event, mode }: EventDialogPro
 
       let error;
       if (isEditMode) {
-        let newStatus: 'pending_hod' | 'pending_dean' | 'pending_principal' | 'resubmitted' = 'pending_hod';
+        let newStatus: 'pending_hod' | 'resubmitted' = 'pending_hod';
         
         if (event.status === 'returned_to_coordinator') {
-          // Enforce full restart of the approval chain: HOD -> Dean -> Principal
-          newStatus = 'pending_hod';
+          // FIX: Use 'resubmitted' status to clearly mark it as a resubmission
+          newStatus = 'resubmitted';
         }
         
         const { error: updateError } = await supabase.from('events').update({ 

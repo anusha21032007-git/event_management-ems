@@ -100,12 +100,12 @@ const CoordinatorDashboard = () => {
   // Events requiring coordinator action (returned_to_coordinator) or pending initial approval flow
   const pendingEvents = allEvents.filter(e => 
     e.status.startsWith('pending') || 
-    e.status === 'resubmitted' ||
-    e.status === 'returned_to_hod' || // Returned to HOD means it's pending HOD action, but coordinator views it as pending
-    e.status === 'returned_to_dean' // Returned to Dean means it's pending Dean action, but coordinator views it as pending
+    e.status === 'resubmitted' || // Include resubmitted events here
+    e.status === 'returned_to_hod' || 
+    e.status === 'returned_to_dean' 
   );
   
-  // Events requiring coordinator correction
+  // Events requiring coordinator correction (returned_to_coordinator) or final rejection
   const returnedEvents = allEvents.filter(e => e.status === 'returned_to_coordinator' || e.status === 'rejected');
   
   // Approved events
