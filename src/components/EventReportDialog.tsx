@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { generateReportOverview } from '@/utils/report';
 
 // --- Zod Schema for Report Submission ---
 const reportSchema = z.object({
@@ -134,6 +135,8 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
   const referenceNumber = `ACE/IQAC/Events/${academicYear}/${departmentClub}/${uniqueId}`;
 
   const venueDetails = data.venues?.name ? `${data.venues.name} (${data.venues.location || 'N/A'})` : data.other_venue_details || 'N/A';
+  
+  const generatedOverview = generateReportOverview(data);
 
   return (
     <div className="printable-report" ref={forwardedRef}>
@@ -205,6 +208,10 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
           <div className="border border-gray-400">
             <div className="p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">OVERVIEW</div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 p-2 text-sm">
+                <div className="py-1 col-span-2">
+                    <strong>Generated Summary:</strong>
+                    <p className="text-xs text-gray-700 mt-1">{generatedOverview}</p>
+                </div>
                 <div className="py-1">
                     <strong>Objective:</strong>
                     <p className="text-xs text-gray-700 mt-1">{data.objective || 'N/A'}</p>
@@ -465,7 +472,7 @@ const EventReportDialog = ({ event, isOpen, onClose }: EventReportDialogProps) =
                         name="final_report_remarks"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Final Report Remarks (Overview/Summary)</FormLabel>
+                            <FormLabel>Final Report Remarks (Used for Generated Overview)</FormLabel>
                             <FormControl>
                               <Textarea 
                                 placeholder="Provide a brief summary of the event execution and final outcomes." 
