@@ -204,21 +204,13 @@ const EventReportContent = ({ data, forwardedRef }: { data: ReportData, forwarde
             <ReportField label="Department/Club" value={data.department_club} />
           </div>
           
-          {/* Section 4: Overview (Objective & Benefit) */}
+          {/* Section 4: Overview (Generated Summary ONLY) */}
           <div className="border border-gray-400">
             <div className="p-2 bg-gray-100 border-b border-gray-400 font-bold text-sm">OVERVIEW</div>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 p-2 text-sm">
-                <div className="py-1 col-span-2">
-                    <strong>Generated Summary:</strong>
-                    <p className="text-xs text-gray-700 mt-1">{generatedOverview}</p>
-                </div>
+            <div className="p-2 text-sm">
                 <div className="py-1">
-                    <strong>Objective:</strong>
-                    <p className="text-xs text-gray-700 mt-1">{data.objective || 'N/A'}</p>
-                </div>
-                <div className="py-1">
-                    <strong>Benefit in terms of learning/Skill/Knowledge obtained:</strong>
-                    <p className="text-xs text-gray-700 mt-1">{data.proposed_outcomes || 'N/A'}</p>
+                    <strong className="text-base">Generated Summary:</strong>
+                    <p className="text-base text-gray-700 mt-1">{generatedOverview}</p>
                 </div>
             </div>
           </div>
